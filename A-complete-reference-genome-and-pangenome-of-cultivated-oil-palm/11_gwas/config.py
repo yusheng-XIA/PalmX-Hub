@@ -24,8 +24,9 @@ SV_COV = GENO / "sv_covariates_5PC_with_intercept.txt"
 SV_META = GENO / "sv_qc.per_sv.tsv"          # per-SV id, svtype, svlen, ref_len, alt_len
 SNP_PCA = GENO / "snp_pca.eigenvec"          # PLINK 1.9 --pca 10 on the LD-pruned SNP set
 Q4, QFAM = GENO / "all.4.Q", GENO / "all.fam"
-N_SNP_TESTS = sum(1 for _ in open(BIM)) if BIM.exists() else None
-BONF_SNP = 0.05 / N_SNP_TESTS if N_SNP_TESTS else None
+N_SNP_TESTS = sum(1 for _ in open(BIM)) if BIM.exists() else None   # markers in the bed (row-count checks)
+N_SNP_BONF = 25928923                        # SNPs with MAF >= 0.05 and missing rate <= 10% among the 308 accessions
+BONF_SNP = 0.05 / N_SNP_BONF                 # 1.9283e-9
 N_SV_UNIQUE = 370136                         # 370,706 tests on 370,136 unique SVs
 BONF_SV = 0.05 / N_SV_UNIQUE                 # 1.3509e-7
 CHROMS = [f"chr{i:02d}B" for i in range(1, 17)]
