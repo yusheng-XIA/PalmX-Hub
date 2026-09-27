@@ -1,0 +1,7 @@
+{
+  "title": "PalmX-Hub: analysis code for haplotype-resolved genomes and a population pangenome of oil palm",
+  "description": "Analysis and figure-generation code for the oil palm (Elaeis guineensis) haplotype-resolved genome, pangenome, population genomics, structural variation, multi-omics, single-nucleus RNA-seq and allele-specific expression study. No data are included; see the Data availability statement of the paper.",
+  "upload_type": "software",
+  "license": "MIT",
+  "keywords": ["oil palm", "Elaeis guineensis", "pangenome", "haplotype-resolved genome", "structural variation", "GWAS", "allele-specific expression"]
+}

@@ -48,6 +48,7 @@ assembly paths, "African35" = the 35 *E. guineensis* paths.
 | `10_phylogeny_and_gene_family/` | OrthoFinder/trimAl/IQ-TREE species tree, MCMCTree (control files and calibrations), CAFE5, copy-number (dosage) null model | Fig. 2a,b; Suppl. Fig. 2 |
 | `11_gwas/` | Phenotype filtering, EMMAX SNP- and SV-GWAS, PC-adjusted and sensitivity scans, λ<sub>GC</sub>, SV intervals vs SNP signals, reciprocal conditional analysis and Wakefield fine-mapping, *SHELL* mutation test | Fig. 5; Suppl. Fig. 10; Suppl. Data 23 |
 | `12_deleterious_variants_and_donor_design/` | Date-palm-polarised candidate dSVs and dSNPs, panel scope, dSV–dSNP co-localisation, *E. oleifera* outgroup sensitivity (nine definitions), neutral-class confounding controls, load matrices and exact dynamic-programming donor paths (coverage mask, W sweep, constrained designs, favourable loci) | Fig. 5h,i; ED8, ED10 |
+| `revision_reanalysis_and_figures/` | Analyses re-run or added during revision (308-accession SNP filtering and population structure, GWAS, dSV/dSNP burden and donor paths, homozygous derived load, *OLE16a*, GO enrichment, ASE robustness, multi-omic axes, snRNA validation) and the plotting/figure-editing scripts for the final display items; see its own README | Fig. 1–5; ED1–10; Suppl. Fig. 1–10 |
 
 ## Two kinds of scripts
 

@@ -1,0 +1,1 @@
+"${DATA_DIR}/youzong/software/HapHiC/haphic" plot "${ANALYSIS_DIR}/results/18_T2Tassmbly_evaluate/juicerbox/04.build/scaffolds.raw.agp" "${ANALYSIS_DIR}/results/18_T2Tassmbly_evaluate/juicerbox/porec_paired.bam"
