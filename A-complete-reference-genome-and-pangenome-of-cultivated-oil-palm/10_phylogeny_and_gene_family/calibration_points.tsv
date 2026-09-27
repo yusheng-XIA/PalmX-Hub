@@ -1,0 +1,8 @@
+Calibration_ID	Node_Label	MCMCTree_Bounds_Ma	TimeTree_Query_A	TimeTree_Query_B	TimeTree_Age_Ma	TimeTree_CI_Low_Ma	TimeTree_CI_High_Ma
+CAL01	monocot_vs_nonmonocot_angiosperms	142-164	Acorus calamus	Arabidopsis thaliana	159.612765	142.06	163.4582
+CAL02	Acorus_vs_other_monocots	133-139	Acorus calamus	Oryza sativa	134.303655	133	139.12
+CAL03	Oryza_vs_Musa_and_palms	103-120	Oryza sativa	Musa acuminata	111.28858	103.1739	117.12
+CAL04	palm_crown	70-90	Calamus	Phoenix dactylifera	83.76427	33.83084	85.8
+CAL05	Cocos_vs_Elaeis_clade	7-59	Cocos nucifera	Elaeis guineensis	29.658075	6.52202	58.97537
+CAL06	Macadamia_vs_core_eudicots	120-131	Macadamia integrifolia	Arabidopsis thaliana	123.867195	121.5	130.2124
+CAL07	rosid_vs_asterid_core_node	110-124	Arabidopsis thaliana	Olea europaea	118.048115	111.37	123.92863

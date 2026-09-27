@@ -1,12 +1,6 @@
 #!/bin/bash
-# Homology-based gene prediction
+# Homology evidence: Swiss-Prot plant subset and published palm proteomes aligned with miniprot v0.12
+set -euo pipefail
 threads=64
-
-# ============================================================
-#  miniprot (fast protein-to-genome alignment)
-# ============================================================
-miniprot -t ${threads} \
-    --gff \
-    ${sample}.nucleus.masked.fasta \
-    ${palm_proteomes} \
-    > ${sample}.miniprot.gff3
+cat uniprot_sprot_plants.fa palm_proteomes/*.fa > homology_proteins.fa
+miniprot -t ${threads} --gff -I ${sample}.softmasked.fa homology_proteins.fa > ${sample}.miniprot.gff3

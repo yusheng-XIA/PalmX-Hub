@@ -1,39 +1,27 @@
 #!/bin/bash
-# Genome assembly using hifiasm with different data combinations
-# Reference: Cheng et al. (2021) Nature Methods
-
+# hifiasm (v0.21.0-r686) assemblies
+#   TN (tenera Boke)          : HiFi + ONT ultra-long + Hi-C
+#   TK (dura), NS (pisifera)  : HiFi + ONT + Hi-C
+#   Nigerian accession, independent E. oleifera accession : HiFi + Hi-C
+#   27 additional pangenome accessions : HiFi only, primary contigs (--primary)
+set -euo pipefail
 threads=64
+gfa2fa() { awk '/^S/{print ">"$2; print $3}' "$1"; }
 
-# ============================================================
-# Mode 1: HiFi + ONT + Hi-C (for tenera hybrid Boke)
-# ============================================================
-hifiasm -o ${sample}.asm \
-    -t ${threads} \
-    --h1 ${sample}_HiC_R1.fq.gz \
-    --h2 ${sample}_HiC_R2.fq.gz \
+# ---- Hi-C phased assemblies (TN, TK, NS: with ONT reads) ------------------------------------
+hifiasm -o ${sample}.asm -t ${threads} \
     --ul ${sample}.ont.fq.gz \
+    --h1 ${sample}_HiC_R1.fq.gz --h2 ${sample}_HiC_R2.fq.gz \
+    ${sample}.hifi.fq.gz
+gfa2fa ${sample}.asm.hic.hap1.p_ctg.gfa > ${sample}.hap1.p_ctg.fa
+gfa2fa ${sample}.asm.hic.hap2.p_ctg.gfa > ${sample}.hap2.p_ctg.fa
+
+# ---- Hi-C phased assemblies without ONT (Nigerian, E. oleifera) -----------------------------
+hifiasm -o ${sample}.asm -t ${threads} \
+    --h1 ${sample}_HiC_R1.fq.gz --h2 ${sample}_HiC_R2.fq.gz \
     ${sample}.hifi.fq.gz
 
-# Extract primary and alternate assemblies
-awk '/^S/{print ">"$2;print $3}' ${sample}.asm.hic.hap1.p_ctg.gfa > ${sample}.hap1.fa
-awk '/^S/{print ">"$2;print $3}' ${sample}.asm.hic.hap2.p_ctg.gfa > ${sample}.hap2.fa
-
-# ============================================================
-# Mode 2: HiFi + ONT (for dura and pisifera)
-# ============================================================
-hifiasm -o ${sample}.asm \
-    -t ${threads} \
-    --ul ${sample}.ont.fq.gz \
-    ${sample}.hifi.fq.gz
-
-awk '/^S/{print ">"$2;print $3}' ${sample}.asm.bp.p_ctg.gfa > ${sample}.p_ctg.fa
-awk '/^S/{print ">"$2;print $3}' ${sample}.asm.bp.a_ctg.gfa > ${sample}.a_ctg.fa
-
-# ============================================================
-# Mode 3: HiFi only (for 28 pangenome accessions)
-# ============================================================
-hifiasm -o ${sample}.asm \
-    -t ${threads} \
-    ${sample}.hifi.fq.gz
-
-awk '/^S/{print ">"$2;print $3}' ${sample}.asm.bp.p_ctg.gfa > ${sample}.p_ctg.fa
+# ---- 27 HiFi-only accessions: primary / alternate contigs -----------------------------------
+hifiasm -o ${sample}.asm -t ${threads} --primary ${sample}.hifi.fq.gz
+gfa2fa ${sample}.asm.p_ctg.gfa > ${sample}.p_ctg.fa     # main assembly sequence
+gfa2fa ${sample}.asm.a_ctg.gfa > ${sample}.a_ctg.fa     # alternate-allele contigs (allele pairing only)

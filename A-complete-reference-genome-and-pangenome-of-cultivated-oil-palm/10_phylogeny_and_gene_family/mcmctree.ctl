@@ -1,0 +1,21 @@
+          seed = -1
+       seqfile = supergene.phy
+      treefile = calibrated_tree.txt
+      mcmcfile = mcmc.txt
+       outfile = out.txt
+
+         ndata = 1
+       seqtype = 2    * 2:AAs
+       usedata = 2    * step2: MCMC using existing in.BV
+         clock = 2    * 2: independent rates
+         model = 2    * 2: Empirical amino-acid model
+         alpha = 0.5
+         ncatG = 4
+     cleandata = 0
+       BDparas = 1 1 0.1 multiplicative
+   rgene_gamma = 2 20 1
+  sigma2_gamma = 1 10 1
+         print = 1
+        burnin = 50000
+      sampfreq = 50
+       nsample = 20000

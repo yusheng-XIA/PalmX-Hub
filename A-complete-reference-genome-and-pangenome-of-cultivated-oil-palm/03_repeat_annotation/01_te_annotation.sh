@@ -1,26 +1,16 @@
 #!/bin/bash
-# TE annotation using EDTA + RepeatModeler + RepeatMasker
+# Transposable elements: EDTA v2.1.0 (LTR_FINDER, LTRharvest, LTR_retriever, TIR-Learner) and
+# whole-genome annotation with RepeatMasker v4.1.5 in sensitive mode
+set -euo pipefail
 threads=64
 
-# ============================================================
-# 1. EDTA pipeline
-# ============================================================
-EDTA.pl --genome ${sample}.fasta \
-    --species others \
-    --sensitive 0 \
-    --anno 1 \
-    --threads ${threads}
+EDTA.pl --genome ${sample}.fa --species others --anno 0 --threads ${threads}
+RepeatMasker -pa ${threads} -s -gff -no_is -lib ${sample}.fa.mod.EDTA.TElib.fa ${sample}.fa
+# TE superfamilies follow the unified classification (Wicker et al.)
 
-# Convert GFF to BED
-grep -v "Parent" ${sample}.fasta.mod.EDTA.TEanno.gff3 \
-    | awk '{OFS="\t"}{print $1,$4,$5,$3}' > ${sample}.te.bed
+# Insertion time of intact LTR-RTs: T = D / 2mu, mu = 6.5e-9 substitutions per site per year
+LTR_retriever -genome ${sample}.fa -inharvest ${sample}.rawLTR.scn -threads ${threads} -u 6.5e-9
+# -> ${sample}.fa.pass.list (column "Insertion_Time")
 
-# ============================================================
-# 2. LTR insertion time estimation
-# ============================================================
-# Mutation rate: 6.5e-9 substitutions/site/year
-# T = D / (2 * mu)
-LTR_retriever -genome ${sample}.fasta \
-    -inharvest ${sample}_rawLTR.scn \
-    -threads ${threads} \
-    -maxlenltr 15000
+# The TN-Hap2 EDTA library was used to annotate the 29 assemblies used for TE density profiles
+# (the TN haplotypes use their own EDTA annotation; TK, NS, Nigerian and E. oleifera use transferred annotations).

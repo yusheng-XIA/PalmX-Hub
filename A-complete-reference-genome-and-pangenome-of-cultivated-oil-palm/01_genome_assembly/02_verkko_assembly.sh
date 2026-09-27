@@ -1,60 +1,40 @@
 #!/bin/bash
-# Genome assembly using Verkko with HiFi + ONT + Pore-C
-# Used for the seedless interspecific hybrid (E. guineensis × E. oleifera)
-# Reference: Rautiainen et al. (2023) Nature Biotechnology
-
+# FL (seedless interspecific hybrid Reyou-2): Verkko v2.2.1 with HiFi, ONT ultra-long and Pore-C
+# Haplotypes assigned with SubPhaser v1.1 (subgenome-specific k-mers):
+#   FL-Hap1 predominantly E. oleifera ancestry, FL-Hap2 predominantly E. guineensis ancestry
+# Scaffolding with CPhasing v0.2.5.r291 (Pore-C), gap closing with TGS-GapCloser, telomere extension
+set -euo pipefail
 threads=64
+sample=FL
 
-# ============================================================
-# Verkko assembly with HiFi + ONT+Pore-C
-# ============================================================
-verkko -d asm \
-  --hifi hifi/*.fastq.gz \
-  --nano ont/*.fastq.gz \
-  --porec porec/*fastq.gz
-# ============================================================
-# Haplotype phasing using SubPhaser
-# Assign contigs to E. guineensis (Hap B) and E. oleifera (Hap A)
-# ============================================================
-SubPhaser -i ${sample}_verkko_asm/assembly.fasta \
-    -labels HapA HapB \
-    -o ${sample}_subphaser_out \
-    -t ${threads}
+# 1. Assembly
+verkko -d ${sample}_verkko --hifi hifi/*.fastq.gz --nano ont/*.fastq.gz --porec porec/*.fastq.gz
+cp ${sample}_verkko/assembly.fasta ${sample}.verkko.fa
 
-# ============================================================
-# Pore-C scaffolding
-# Process Pore-C data using pairtools pipeline
-# ============================================================
+# 2. Haplotype assignment by subgenome-specific k-mers (config lists contigs per homologous group)
+SubPhaser.py -i ${sample}.verkko.fa -c subphaser_groups.cfg -pre ${sample} -t ${threads}
 
-# Index assembly
-bwa-mem2 index ${sample}.assembly.fasta
+# 3. Pore-C scaffolding into 16 pseudochromosomes per haplotype
+for hap in Hap1 Hap2; do
+    cphasing pipeline -f ${sample}_${hap}.contigs.fa -pct porec/${sample}.porec.fq.gz -n 16 -t ${threads} \
+        -o cphasing_${hap}
+done
 
-# Align Pore-C reads
-pairtools parse \
-    --min-mapq 40 \
-    --walks-policy 5unique \
-    --max-inter-align-gap 30 \
-    --output ${sample}.parsed.pairsam \
-    <(bwa-mem2 mem -t ${threads} -SP ${sample}.assembly.fasta ${sample}.porec.fq.gz)
+# 4. Gap closing with ONT reads
+for hap in Hap1 Hap2; do
+    tgsgapcloser --scaff ${sample}_${hap}.scaffolds.fa --reads ont/${sample}.ont.fa \
+        --output ${sample}_${hap}.gapclosed --ne --thread ${threads}
+done
 
-pairtools sort --output ${sample}.sorted.pairsam ${sample}.parsed.pairsam
-pairtools dedup --output ${sample}.dedup.pairsam ${sample}.sorted.pairsam
-pairtools select '(pair_type == "UU") or (pair_type == "UR") or (pair_type == "RU")' \
-    --output ${sample}.filtered.pairsam ${sample}.dedup.pairsam
+# 5. Telomere extension: reads carrying (TTTAGGG)n / (CCCTAAA)n are extracted and assembled locally
+#    at chromosome termini; every correction was checked on read pileups in IGV.
+seqkit grep -s -r -p '(TTTAGGG){5,}|(CCCTAAA){5,}' hifi/*.fastq.gz ont/*.fastq.gz > telomeric_reads.fq
+minimap2 -ax map-hifi -t ${threads} ${sample}_Hap2.gapclosed.scaff_seqs telomeric_reads.fq \
+    | samtools sort -@ ${threads} -o telomeric_reads.bam
+samtools index telomeric_reads.bam
 
-# ============================================================
-# Gap closing with ONT reads
-# ============================================================
-# Identify reads spanning gap junctions
-minimap2 -ax map-ont -t ${threads} ${sample}.scaffolds.fasta ${sample}.ont.fq.gz \
-    | samtools sort -@ ${threads} -o ${sample}.ont_aligned.bam
-samtools index ${sample}.ont_aligned.bam
-
-# Manual validation of gap-filling reads in IGV
-
-# ============================================================
-# Telomere extension
-# ============================================================
-# Extract reads containing telomeric repeats
-grep -B1 "TTTAGGGTTTAGGG" ${sample}.hifi.fq | grep "^@" | sed 's/@//' > telomere_reads.list
-seqtk subseq ${sample}.hifi.fq.gz telomere_reads.list > telomere_reads.fq
+# 6. Consistency checks: Pore-C contacts (CPhasing) and long-read support
+for hap in Hap1 Hap2; do
+    minimap2 -ax map-ont -t ${threads} ${sample}_${hap}.final.fa ont/${sample}.ont.fq.gz \
+        | samtools sort -@ ${threads} -o ${sample}_${hap}.ont.bam
+done

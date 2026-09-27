@@ -1,57 +1,22 @@
 #!/bin/bash
-# Hi-C scaffolding using HapHiC + YaHS + Juicebox
+# Allele-aware Hi-C scaffolding of the phased contigs (TN, TK, NS, Nigerian, E. oleifera)
+# with HapHiC, followed by manual curation in Juicebox (v1.9.8)
+set -euo pipefail
 threads=64
+nchrom=16
 
-# ============================================================
-# Step 1: Hi-C read alignment using chromap
-# ============================================================
-samtools faidx ${sample}.fasta
-chromap -i -r ${sample}.fasta -o contigs.index
+# 1. Hi-C read mapping and filtering (HapHiC recommended workflow)
+cat ${sample}.hap1.p_ctg.fa ${sample}.hap2.p_ctg.fa > ${sample}.contigs.fa
+bwa index ${sample}.contigs.fa
+bwa mem -5SP -t ${threads} ${sample}.contigs.fa ${sample}_HiC_R1.fq.gz ${sample}_HiC_R2.fq.gz \
+    | samblaster | samtools view - -@ ${threads} -S -h -b -F 3340 -o ${sample}.HiC.bam
+filter_bam ${sample}.HiC.bam 1 --nm 3 --threads ${threads} | samtools view - -b -@ ${threads} -o ${sample}.HiC.filtered.bam
 
-chromap \
-    --preset hic \
-    -r ${sample}.fasta \
-    -x contigs.index \
-    --remove-pcr-duplicates \
-    -1 ${sample}_HiC_R1.fq.gz \
-    -2 ${sample}_HiC_R2.fq.gz \
-    --SAM \
-    -o ${sample}.sam \
-    -t ${threads}
+# 2. Allele-aware scaffolding (2 x 16 pseudochromosomes for a phased diploid)
+haphic pipeline ${sample}.contigs.fa ${sample}.HiC.filtered.bam $((nchrom * 2)) --threads ${threads}
 
-samtools view -bh -u -F0xF0C -q 10 ${sample}.sam \
-    | samtools sort -@ ${threads} -o ${sample}.hic.bam
-samtools index ${sample}.hic.bam
-
-# Convert to BED for YaHS
-bedtools bamtobed -i ${sample}.hic.bam \
-    | awk -v OFS='\t' '{$4=substr($4,1,length($4)-2); print}' > ${sample}.bed
-
-# ============================================================
-# Step 2: HapHiC allele-aware scaffolding
-# ============================================================
-HapHiC pipeline ${sample}.fasta ${sample}.hic.bam ${nchrom}
-
-# ============================================================
-# Step 3: YaHS scaffolding
-# ============================================================
-yahs ${sample}.fasta ${sample}.bed -o ${sample}_yahs
-
-# ============================================================
-# Step 4: Juicebox visualization and manual curation
-# ============================================================
-juicer pre -a -o out_JBAT \
-    ${sample}_yahs.bin \
-    ${sample}_yahs_scaffolds_final.agp \
-    ${sample}.fasta.fai
-
-JUICER=juicer_tools.jar
-asm_size=$(awk '{s+=$2} END{print s}' ${sample}.fasta.fai)
-java -Xmx36G -jar ${JUICER} \
-    pre out_JBAT.txt out_JBAT.hic assembly ${asm_size}
-
-# After manual curation in Juicebox:
-juicer post -o out_JBAT \
-    out_JBAT.review.assembly \
-    ${sample}_yahs_scaffolds_final.agp \
-    ${sample}.fasta
+# 3. Juicebox review files; after manual curation the reviewed assembly is converted back to FASTA
+cd 04.build
+bash juicebox.sh
+# ... curate out_JBAT.hic / out_JBAT.assembly in Juicebox, export out_JBAT.review.assembly ...
+juicer post -o out_JBAT out_JBAT.review.assembly out_JBAT.liftover.agp ../${sample}.contigs.fa
